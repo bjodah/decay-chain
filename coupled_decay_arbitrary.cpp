@@ -1,8 +1,8 @@
 /*
- * coupled_decay.cpp
+ * coupled_decay_arbitrary.cpp
  *
- * Solving a coupled decay problem
- * with odeint and multiprecision data types
+ * Solving a coupled decay problem with arbitrary number of daughters
+ * with odeint and (optionally) multiprecision data types
  *
  * Copyright 2015 Björn Dahlgren
  *
@@ -16,9 +16,6 @@
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/odeint.hpp>
 #include <boost/math/special_functions/binomial.hpp>
-
-// #include <boost/numeric/odeint/stepper/bulirsch_stoer.hpp>
-// #include <boost/numeric/odeint/stepper/bulirsch_stoer_dense_out.hpp>
 
 
 #if defined(WITH_MULTIPRECISION)
@@ -47,12 +44,10 @@ using boost::numeric::odeint::bulirsch_stoer_dense_out;
 typedef boost::numeric::ublas::vector<value_type> vector_type;
 typedef boost::numeric::ublas::matrix<value_type> matrix_type;
 
-const value_type k0(value_type(17)/value_type(10));
-const value_type k1(value_type(23)/value_type(10));
-const value_type k2(value_type(29)/value_type(10));
-
 value_type yi1(int i, int p, int a){
-    return boost::math::binomial_coefficient<value_type>(p+i, p) * pow(static_cast<value_type>(a), -1 - static_cast<value_type>(p)) *
+    // Analytic solution
+    return boost::math::binomial_coefficient<value_type>(p+i, p) *
+        pow(static_cast<value_type>(a), -1 - static_cast<value_type>(p)) *
         pow((a-1)/static_cast<value_type>(a), static_cast<value_type>(i));
 }
 
@@ -123,7 +118,6 @@ public:
 };
 
 
-
 size_t run_integration(int log10abstol,
                        int log10reltol,
                        int log10tend,
@@ -131,8 +125,9 @@ size_t run_integration(int log10abstol,
                        bool adaptive,
                        int N,
                        int p,
-                       int a
-){
+                       int a,
+                       int method=0)
+{
     vector_type y(N);
     value_type atol = pow(value_type(10), value_type(log10abstol));
     value_type rtol = pow(value_type(10), value_type(log10reltol));
@@ -161,9 +156,13 @@ size_t run_integration(int log10abstol,
               << "adaptive    " << adaptive  << '\n'
               << std::endl;
 #endif
-    // auto nsteps = cd.rosenbrock_adaptive(y, x0, xend, dx0, atol, rtol);
-    // auto nsteps = cd.dopri5_adaptive(y, x0, xend, dx0, atol, rtol);
-    auto nsteps = cd.bulirsch_stoer_adaptive(y, x0, xend, dx0, atol, rtol);
+    size_t nsteps;
+    if (method == 0)
+        nsteps = cd.rosenbrock_adaptive(y, x0, xend, dx0, atol, rtol);
+    else if (method == 1)
+        nsteps = cd.dopri5_adaptive(y, x0, xend, dx0, atol, rtol);
+    else
+        nsteps = cd.bulirsch_stoer_adaptive(y, x0, xend, dx0, atol, rtol);
 #if !defined(NDEBUG)
     std::cerr << "nrhs "<< cd.nrhs << '\n'
               << "njac "<< cd.njac
@@ -190,9 +189,10 @@ size_t run_integration(int log10abstol,
 
 int main(int argc, char **argv)
 {
-    // see roberts.py for a more user friendly front end.
-    if (argc != 9)
+    if (argc != 10){
+        std::cerr << "Expected 9 arguments, got " << argc-1 << "Exiting!" << std::endl;
         return 1;
+    }
     int log10abstol = atoi(argv[1]);
     int log10reltol = atoi(argv[2]);
     int log10tend = atoi(argv[3]);
@@ -201,7 +201,9 @@ int main(int argc, char **argv)
     int N = atoi(argv[6]);
     int p = atoi(argv[7]);
     int a = atoi(argv[8]);
-    std::cerr << "naccept(?): " << run_integration(log10abstol, log10reltol, log10tend,
-                                                   log10dx, adaptive == 1, N, p, a) << std::endl;
+    int method = atoi(argv[9]);
+    std::cerr << "naccept(?): " <<
+        run_integration(log10abstol, log10reltol, log10tend,
+                        log10dx, adaptive == 1, N, p, a, method) << std::endl;
     return 0;
 }
