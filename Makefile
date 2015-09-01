@@ -4,14 +4,27 @@ ifeq ($(RELEASE),1)
 else
   CXXFLAGS+=-O1
 endif
-CXXFLAGS+=$(EXTRA_CXX_FLAGS)
+CXXFLAGS+=$(EXTRA_CXXFLAGS)
 
-all: cda_mp cda_dp
+test: all
+	./decay_chain_dp
+	./decay_chain_cpp
+	./decay_chain_gmp
+	# lu decomposition fails with mpfr:
+	#./decay_chain_mpfr
 
-.PHONY: all
+all: decay_chain_dp decay_chain_cpp decay_chain_mpfr decay_chain_gmp
 
-cda_mp: coupled_decay_arbitrary.cpp
-	$(CXX) $(CXXFLAGS) -DWITH_MULTIPRECISION -o $@ $^
+.PHONY: all test
 
-cda_dp: coupled_decay_arbitrary.cpp
-	$(CXX) $(CXXFLAGS) -o $@ $^
+decay_chain_dp: decay_chain.cpp
+	$(CXX) $(CXXFLAGS) -DVALUE_TYPE_IDX=0 -o $@ $^
+
+decay_chain_cpp: decay_chain.cpp
+	$(CXX) $(CXXFLAGS) -DVALUE_TYPE_IDX=1 -o $@ $^
+
+decay_chain_mpfr: decay_chain.cpp
+	$(CXX) $(CXXFLAGS) -DVALUE_TYPE_IDX=2 -o $@ $^ -lmpfr
+
+decay_chain_gmp: decay_chain.cpp
+	$(CXX) $(CXXFLAGS) -DVALUE_TYPE_IDX=3 -o $@ $^ -lgmp
