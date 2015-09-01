@@ -25,6 +25,8 @@ Run make to run simple tests:
    ./decay_chain_gmp
    # lu decomposition fails with mpfr:
    #./decay_chain_mpfr
+   $ echo $?  # zero indicates success
+   0
    
 for more data you may want to run ``run_all.sh``
 

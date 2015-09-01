@@ -2,4 +2,8 @@ image: bjodah/dockerfile-bjodah-scicomp
 git:
     path: github.com/bjodah/decay-chain
 script:
+  - cp bulirsch_stoer_dense_out.hpp.patch /usr/local/
+  - cd /usr/local
+  - patch -p1 < bulirsch_stoer_dense_out.hpp.patch
+  - cd -
   - make
