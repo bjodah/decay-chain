@@ -1,0 +1,5 @@
+image: bjodah/dockerfile-bjodah-scicomp
+git:
+    path: github.com/bjodah/decay-chain
+script:
+  - make
