@@ -58,6 +58,7 @@ using boost::numeric::odeint::integrate_adaptive;
 using boost::numeric::odeint::make_dense_output;
 using boost::numeric::odeint::rosenbrock4;
 using boost::numeric::odeint::runge_kutta_dopri5;
+using boost::numeric::odeint::bulirsch_stoer;
 using boost::numeric::odeint::bulirsch_stoer_dense_out;
 
 typedef boost::numeric::ublas::vector<value_type> vector_type;
@@ -127,7 +128,14 @@ public:
         return integrate_adaptive(stepper, std::bind(&CoupledDecay::rhs, this, _1, _2, _3),
                                   y0, x0, xend, dx0, obs_cb);
     }
-
+    size_t bulirsch_stoer_nondense(vector_type y0, value_type x0, value_type xend,
+                              value_type dx0, value_type atol, value_type rtol){
+        nrhs = 0; njac = 0;
+        auto stepper = bulirsch_stoer<vector_type, value_type>(atol, rtol);
+        auto obs_cb = std::bind(&CoupledDecay::obs, this, _1, _2);
+        return integrate_adaptive(stepper, std::bind(&CoupledDecay::rhs, this, _1, _2, _3),
+                                  y0, x0, xend, dx0, obs_cb);
+    }
     static value_type yi1(int i, int p, int a){
         // Analytic solution (given m_lmbd was set correctly)
         return boost::math::binomial_coefficient<value_type>(p+i, p) *
@@ -185,8 +193,12 @@ int run_integration(int log10abstol,
         nsteps = cd.rosenbrock_adaptive(y, x0, xend, dx0, atol, rtol);
     else if (method == 1)
         nsteps = cd.dopri5_adaptive(y, x0, xend, dx0, atol, rtol);
-    else
+    else if (method == 2)
         nsteps = cd.bulirsch_stoer_adaptive(y, x0, xend, dx0, atol, rtol);
+    else if (method == 3)
+        nsteps = cd.bulirsch_stoer_nondense(y, x0, xend, dx0, atol, rtol);
+    else
+        throw std::logic_error("Unknown method");
 
 #if defined(VERBOSE)
     std::cerr << "nrhs "<< cd.nrhs << '\n'
