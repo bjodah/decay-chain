@@ -2,6 +2,6 @@ image: bjodah/dockerfile-bjodah-scicomp
 git:
     path: github.com/bjodah/decay-chain
 script:
-  - git clone -b fix_multiprecision_bulirsch_stoer --single-branch git://github.com/bjodah/odeint-v2.git odeint-v2-fix
-  - ln -s odeint-v2-fix/include/boost boost
+  - git clone --depth 1 git://github.com/headmyshoulder/odeint-v2.git
+  - ln -s odeint-v2/include/boost boost
   - make
