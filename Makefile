@@ -5,20 +5,20 @@ else
   CXXFLAGS+=-O1
 endif
 CXXFLAGS+=$(EXTRA_CXXFLAGS)
-        log10abstol = -12;
-        log10reltol = -12;
-        log10tend = 0;
-        log10dx = -14;
-        adaptive = 1;
-        N = 27;
-        p = 1;
-        a = 27;
+log10abstol?=-12
+log10reltol?=-12
+log10tend?=0
+log10dx?=-14
+adaptive?=1
+N?=27
+p?=1
+a?=27
 
 test: all
 	for method in 0 1 2 3 ; do \
-		./decay_chain_dp -12 -12 0 -14 1 27 1 27 $$method ; \
-		./decay_chain_cpp -12 -12 0 -14 1 27 1 27 $$method ; \
-		./decay_chain_gmp -12 -12 0 -14 1 27 1 27 $$method ; \
+		./decay_chain_dp $(log10abstol) $(log10reltol) $(log10tend) $(log10dx) $(adaptive) $(N) $(p) $(a) $$method ; \
+		./decay_chain_cpp $(log10abstol) $(log10reltol) $(log10tend) $(log10dx) $(adaptive) $(N) $(p) $(a) $$method ; \
+		./decay_chain_gmp $(log10abstol) $(log10reltol) $(log10tend) $(log10dx) $(adaptive) $(N) $(p) $(a) $$method ; \
 	done
 	# lu decomposition fails with mpfr (proably a bug in either odeint, ublas or mpfr):
 	#./decay_chain_mpfr
