@@ -89,7 +89,7 @@ public:
         m_lmbd(lmbd), ny(lmbd.size()),
         system(std::make_pair(std::bind(&CoupledDecay::rhs, this, _1, _2, _3),
                               std::bind(&CoupledDecay::jac, this, _1, _2, _3, _4))) {}
-    void rhs(const vector_type &y, vector_type &dydx, value_type x)
+    void rhs(const vector_type &y, vector_type &dydx, const value_type x)
     {
         for (size_t i=0; i < (this->ny); ++i){
             dydx[i] = -m_lmbd[i]*y[i];
