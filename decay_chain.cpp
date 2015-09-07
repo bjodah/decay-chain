@@ -56,8 +56,11 @@ using namespace std::placeholders;
 using boost::numeric::odeint::integrate_const;
 using boost::numeric::odeint::integrate_adaptive;
 using boost::numeric::odeint::make_dense_output;
+using boost::numeric::odeint::make_controlled;
 using boost::numeric::odeint::rosenbrock4;
+using boost::numeric::odeint::rosenbrock4_controller;
 using boost::numeric::odeint::runge_kutta_dopri5;
+using boost::numeric::odeint::controlled_runge_kutta;
 using boost::numeric::odeint::bulirsch_stoer;
 using boost::numeric::odeint::bulirsch_stoer_dense_out;
 
@@ -111,11 +114,26 @@ public:
         auto obs_cb = std::bind(&CoupledDecay::obs, this, _1, _2);
         return integrate_adaptive(stepper, this->system, y0, x0, xend, dx0, obs_cb);
     }
+    size_t rosenbrock_adaptive_nondense(vector_type y0, value_type x0, value_type xend,
+                               value_type dx0, value_type atol, value_type rtol){
+        nrhs = 0; njac = 0;
+        auto stepper = make_controlled<rosenbrock4<value_type> >(atol, rtol);
+        auto obs_cb = std::bind(&CoupledDecay::obs, this, _1, _2);
+        return integrate_adaptive(stepper, this->system, y0, x0, xend, dx0, obs_cb);
+    }
 
     size_t dopri5_adaptive(vector_type y0, value_type x0, value_type xend,
                         value_type dx0, value_type atol, value_type rtol){
         nrhs = 0; njac = 0;
         auto stepper = make_dense_output<runge_kutta_dopri5< vector_type, value_type >>(atol, rtol);
+        auto obs_cb = std::bind(&CoupledDecay::obs, this, _1, _2);
+        return integrate_adaptive(stepper, std::bind(&CoupledDecay::rhs, this, _1, _2, _3),
+                                  y0, x0, xend, dx0, obs_cb);
+    }
+    size_t dopri5_adaptive_nondense(vector_type y0, value_type x0, value_type xend,
+                        value_type dx0, value_type atol, value_type rtol){
+        nrhs = 0; njac = 0;
+        auto stepper = make_controlled<runge_kutta_dopri5< vector_type, value_type > >(atol, rtol);
         auto obs_cb = std::bind(&CoupledDecay::obs, this, _1, _2);
         return integrate_adaptive(stepper, std::bind(&CoupledDecay::rhs, this, _1, _2, _3),
                                   y0, x0, xend, dx0, obs_cb);
@@ -128,7 +146,7 @@ public:
         return integrate_adaptive(stepper, std::bind(&CoupledDecay::rhs, this, _1, _2, _3),
                                   y0, x0, xend, dx0, obs_cb);
     }
-    size_t bulirsch_stoer_nondense(vector_type y0, value_type x0, value_type xend,
+    size_t bulirsch_stoer_adaptive_nondense(vector_type y0, value_type x0, value_type xend,
                               value_type dx0, value_type atol, value_type rtol){
         nrhs = 0; njac = 0;
         auto stepper = bulirsch_stoer<vector_type, value_type>(atol, rtol);
@@ -196,7 +214,11 @@ int run_integration(int log10abstol,
     else if (method == 2)
         nsteps = cd.bulirsch_stoer_adaptive(y, x0, xend, dx0, atol, rtol);
     else if (method == 3)
-        nsteps = cd.bulirsch_stoer_nondense(y, x0, xend, dx0, atol, rtol);
+        nsteps = cd.rosenbrock_adaptive_nondense(y, x0, xend, dx0, atol, rtol);
+    else if (method == 4)
+        nsteps = cd.dopri5_adaptive_nondense(y, x0, xend, dx0, atol, rtol);
+    else if (method == 5)
+        nsteps = cd.bulirsch_stoer_adaptive_nondense(y, x0, xend, dx0, atol, rtol);
     else
         throw std::logic_error("Unknown method");
 

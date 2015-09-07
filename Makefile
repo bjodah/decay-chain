@@ -15,7 +15,7 @@ p?=1
 a?=27
 
 test: all
-	for method in 0 1 2 3 ; do \
+	for method in 0 1 2 3 4 5 ; do \
 		./decay_chain_dp $(log10abstol) $(log10reltol) $(log10tend) $(log10dx) $(adaptive) $(N) $(p) $(a) $$method ; \
 		./decay_chain_cpp $(log10abstol) $(log10reltol) $(log10tend) $(log10dx) $(adaptive) $(N) $(p) $(a) $$method ; \
 		./decay_chain_gmp $(log10abstol) $(log10reltol) $(log10tend) $(log10dx) $(adaptive) $(N) $(p) $(a) $$method ; \
