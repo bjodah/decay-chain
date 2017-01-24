@@ -1,9 +1,8 @@
-====================================
 Decay chain integration using odeint
 ====================================
 
-.. image:: http://hera.physchem.kth.se:8080/github.com/bjodah/decay-chain/status.svg?branch=master
-   :target: http://hera.physchem.kth.se:8080/github.com/bjodah/decay-chain
+.. image:: http://hera.physchem.kth.se:9090/api/badges/bjodah/decay-chain/status.svg
+   :target: http://hera.physchem.kth.se:9090/bjodah/decay-chain
    :alt: Build status
 
 A demo where `odeint <http://www.odint.com>`_ is used to integrate a ODE system corrsponding
