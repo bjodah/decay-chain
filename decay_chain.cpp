@@ -230,15 +230,15 @@ int main(int argc, char **argv)
 #endif
     int log10abstol, log10reltol, log10tend, log10dx, adaptive, N, p, a, method;
     if (argc != 10){
-        log10abstol = -12;
-        log10reltol = -12;
+        log10abstol = -8;
+        log10reltol = -8;
         log10tend = 0;
         log10dx = -14;
         adaptive = 1;
         N = 27;
         p = 1;
         a = 27;
-        method = 0;
+        method = 1;
     } else {
         log10abstol = atoi(argv[1]);
         log10reltol = atoi(argv[2]);

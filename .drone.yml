@@ -1,7 +1,21 @@
-image: bjodah/dockerfile-bjodah-scicomp
-git:
-    path: github.com/bjodah/decay-chain
-script:
-  - git clone -b fix_multiprecision_bulirsch_stoer --single-branch git://github.com/bjodah/odeint-v2.git odeint-v2-fix
-  - ln -s odeint-v2-fix/include/boost boost
-  - make
+build:
+  image: bjodah/bjodahimg16dev:latest
+  commands:
+    - export CURPATH=$(pwd)
+    - cd /opt/boost_1_63_0/boost/numeric/odeint/stepper
+    - patch -p1 < $CURPATH/rosenbrock4_controller.hpp.patch
+    - cd -
+    - CPLUS_INCLUDE_PATH=/opt/boost_1_63_0 ./run_all.sh
+    - mkdir deploy
+    - cp *.png deploy/
+
+deploy:
+
+  rsync:
+    host: hera.physchem.kth.se
+    user: decay-chain
+    port: 22
+    source: deploy/
+    target: ~/public_html
+    recursive: true
+    delete: false
