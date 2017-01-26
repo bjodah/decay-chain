@@ -1,4 +1,4 @@
-CXXFLAGS=-std=c++11 -g -Wall -Wno-unused-local-typedefs -I.
+CXXFLAGS=-std=c++11 -g -Wall -Wextra -Werror -pedantic -Wno-unused-local-typedefs -I.
 ifeq ($(RELEASE),1)
   CXXFLAGS+=-O2 -DNDEBUG
 else

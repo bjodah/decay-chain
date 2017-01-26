@@ -9,14 +9,9 @@
  * Open Source, released under the permissive BSD "2-clause license"
  */
 
-
-#include <array>
-#include <functional>
 #include <iostream>
 #include <stdexcept> // std::logic_error
-#include <boost/numeric/ublas/matrix.hpp>
-#include <boost/numeric/odeint.hpp>
-#include <boost/math/special_functions/binomial.hpp>
+#include "decay_chain.hpp"
 
 // Compile with -DVALUE_TYPE_IDX=# where #: 0=double, 1=cpp_dec_float, 2=mpfr, 3=gmp
 #if !defined(VALUE_TYPE_IDX)
@@ -25,151 +20,47 @@
 
 #if VALUE_TYPE_IDX==0
 #include <cmath>
-  typedef double value_type;
+  using value_type = double;
   using std::abs;
   using std::pow;
   using std::log;
 #elif VALUE_TYPE_IDX==1
   #include <boost/multiprecision/cpp_dec_float.hpp>
-  typedef boost::multiprecision::cpp_dec_float_50 value_type;
+  using value_type = boost::multiprecision::cpp_dec_float_50;
   using boost::multiprecision::abs;
   using boost::multiprecision::pow;
   using boost::multiprecision::log;
 #elif VALUE_TYPE_IDX==2
   #include <boost/multiprecision/mpfr.hpp>
-  typedef boost::multiprecision::mpfr_float_50 value_type;
+  using value_type = boost::multiprecision::mpfr_float_50;
   using boost::multiprecision::abs;
   using boost::multiprecision::pow;
   using boost::multiprecision::log;
 #elif VALUE_TYPE_IDX==3
   #include <boost/multiprecision/gmp.hpp>
-  typedef boost::multiprecision::mpf_float_50 value_type;
+  using value_type = boost::multiprecision::mpf_float_50;
   using boost::multiprecision::abs;
   using boost::multiprecision::pow;
   using boost::multiprecision::log;
 #else
-  #error "Unknown value type index"
+  #error "VALUE_TYPE_IDX needs to be either 0, 1, 2 or 3"
 #endif
 
-using namespace std::placeholders;
-
-using boost::numeric::odeint::integrate_const;
-using boost::numeric::odeint::integrate_adaptive;
-using boost::numeric::odeint::make_dense_output;
-using boost::numeric::odeint::make_controlled;
-using boost::numeric::odeint::rosenbrock4;
-using boost::numeric::odeint::rosenbrock4_controller;
-using boost::numeric::odeint::runge_kutta_dopri5;
-using boost::numeric::odeint::controlled_runge_kutta;
-using boost::numeric::odeint::bulirsch_stoer;
-using boost::numeric::odeint::bulirsch_stoer_dense_out;
-
-typedef boost::numeric::ublas::vector<value_type> vector_type;
-typedef boost::numeric::ublas::matrix<value_type> matrix_type;
-
-class CoupledDecay {
-public:
-    size_t nrhs, njac;
-    vector_type m_lmbd;
-    const size_t ny;
-    std::vector<value_type> xout;
-    std::vector<value_type> yout;
-private:
-    std::pair<std::function<void(const vector_type &, vector_type &, value_type)>,
-              std::function<void(const vector_type &, matrix_type &,
-                                 const value_type &, vector_type &)> > system;
-    void obs(const vector_type &yarr, value_type xval) {
-        xout.push_back(xval);
-        for(size_t i=0 ; i<yarr.size() ; ++i)
-            yout.push_back(yarr[i]);
-    }
-public:
-
-    CoupledDecay(vector_type lmbd) :
-        m_lmbd(lmbd), ny(lmbd.size()),
-        system(std::make_pair(std::bind(&CoupledDecay::rhs, this, _1, _2, _3),
-                              std::bind(&CoupledDecay::jac, this, _1, _2, _3, _4))) {}
-    void rhs(const vector_type &y, vector_type &dydx, const value_type x)
-    {
-        for (size_t i=0; i < (this->ny); ++i){
-            dydx[i] = -m_lmbd[i]*y[i];
-            if (i>0)
-                dydx[i] += m_lmbd[i-1]*y[i-1];
-        }
-        ++nrhs;
-    }
-    void jac(const vector_type & y, matrix_type &J, const value_type & x, vector_type &dfdx) {
-        for (size_t i=0; i < (this->ny); ++i){
-            J(i, i) = -m_lmbd[i];
-            if (i>0)
-                J(i, i-1) = m_lmbd[i-1];
-            dfdx[i] = 0;
-        }
-        ++njac;
-    }
-    size_t rosenbrock_adaptive(vector_type y0, value_type x0, value_type xend,
-                               value_type dx0, value_type atol, value_type rtol){
-        nrhs = 0; njac = 0;
-        auto stepper = make_dense_output<rosenbrock4<value_type> >(atol, rtol);
-        auto obs_cb = std::bind(&CoupledDecay::obs, this, _1, _2);
-        return integrate_adaptive(stepper, this->system, y0, x0, xend, dx0, obs_cb);
-    }
-    size_t rosenbrock_adaptive_nondense(vector_type y0, value_type x0, value_type xend,
-                               value_type dx0, value_type atol, value_type rtol){
-        nrhs = 0; njac = 0;
-        auto stepper = make_controlled<rosenbrock4<value_type> >(atol, rtol);
-        auto obs_cb = std::bind(&CoupledDecay::obs, this, _1, _2);
-        return integrate_adaptive(stepper, this->system, y0, x0, xend, dx0, obs_cb);
-    }
-
-    size_t dopri5_adaptive(vector_type y0, value_type x0, value_type xend,
-                        value_type dx0, value_type atol, value_type rtol){
-        nrhs = 0; njac = 0;
-        auto stepper = make_dense_output<runge_kutta_dopri5< vector_type, value_type >>(atol, rtol);
-        auto obs_cb = std::bind(&CoupledDecay::obs, this, _1, _2);
-        return integrate_adaptive(stepper, std::bind(&CoupledDecay::rhs, this, _1, _2, _3),
-                                  y0, x0, xend, dx0, obs_cb);
-    }
-    size_t dopri5_adaptive_nondense(vector_type y0, value_type x0, value_type xend,
-                        value_type dx0, value_type atol, value_type rtol){
-        nrhs = 0; njac = 0;
-        auto stepper = make_controlled<runge_kutta_dopri5< vector_type, value_type > >(atol, rtol);
-        auto obs_cb = std::bind(&CoupledDecay::obs, this, _1, _2);
-        return integrate_adaptive(stepper, std::bind(&CoupledDecay::rhs, this, _1, _2, _3),
-                                  y0, x0, xend, dx0, obs_cb);
-    }
-    size_t bulirsch_stoer_adaptive(vector_type y0, value_type x0, value_type xend,
-                        value_type dx0, value_type atol, value_type rtol){
-        nrhs = 0; njac = 0;
-        auto stepper = bulirsch_stoer_dense_out<vector_type, value_type>(atol, rtol);
-        auto obs_cb = std::bind(&CoupledDecay::obs, this, _1, _2);
-        return integrate_adaptive(stepper, std::bind(&CoupledDecay::rhs, this, _1, _2, _3),
-                                  y0, x0, xend, dx0, obs_cb);
-    }
-    size_t bulirsch_stoer_adaptive_nondense(vector_type y0, value_type x0, value_type xend,
-                              value_type dx0, value_type atol, value_type rtol){
-        nrhs = 0; njac = 0;
-        auto stepper = bulirsch_stoer<vector_type, value_type>(atol, rtol);
-        auto obs_cb = std::bind(&CoupledDecay::obs, this, _1, _2);
-        return integrate_adaptive(stepper, std::bind(&CoupledDecay::rhs, this, _1, _2, _3),
-                                  y0, x0, xend, dx0, obs_cb);
-    }
-    static value_type yi1(int i, int p, int a){
-        // Analytic solution (given m_lmbd was set correctly)
-        return boost::math::binomial_coefficient<value_type>(p+i, p) *
-            pow(static_cast<value_type>(a), -1 - static_cast<value_type>(p)) *
-            pow((a-1)/static_cast<value_type>(a), static_cast<value_type>(i));
+template<typename value_type>
+value_type yi1(int i, int p, int a){
+    // Analytic solution (given m_lmbd was set correctly)
+    return boost::math::binomial_coefficient<value_type>(p+i, p) *
+        pow(static_cast<value_type>(a), -1 - static_cast<value_type>(p)) *
+        pow((a-1)/static_cast<value_type>(a), static_cast<value_type>(i));
 }
 
-
-};
-
+using vector_type = typename odeintmp::MPODESys<value_type>::vector_type;
+using matrix_type = typename odeintmp::MPODESys<value_type>::matrix_type;
 
 int run_integration(int log10abstol,
                     int log10reltol,
                     int log10tend,
                     int log10dx,
-                    bool adaptive,
                     int N,
                     int p,
                     int a,
@@ -191,14 +82,13 @@ int run_integration(int log10abstol,
         y[i] = 0;
     }
     y[0] = 1;
-    auto cd = CoupledDecay(lmbd);
+    auto cd = decay_chain::CoupledDecay<value_type>(lmbd);
 
 #if defined(VERBOSE)
     std::cerr << "log10abstol "<< log10abstol<< '\n'
               << "log10reltol "<< log10reltol<< '\n'
               << "log10tend   "<< log10tend  << '\n'
               << "log10dx     "<< log10dx    << '\n'
-              << "adaptive    " << adaptive  << '\n'
               << "N           " << N         << '\n'
               << "p           " << p         << '\n'
               << "a           " << a         << '\n'
@@ -219,28 +109,34 @@ int run_integration(int log10abstol,
         nsteps = cd.dopri5_adaptive_nondense(y, x0, xend, dx0, atol, rtol);
     else if (method == 5)
         nsteps = cd.bulirsch_stoer_adaptive_nondense(y, x0, xend, dx0, atol, rtol);
+    if (method == 6)
+        nsteps = cd.rosenbrock_const(y, x0, xend, dx0);
+    else if (method == 7)
+        nsteps = cd.dopri5_const(y, x0, xend, dx0);
+    else if (method == 8)
+        nsteps = cd.bulirsch_stoer_const(y, x0, xend, dx0);
     else
         throw std::logic_error("Unknown method");
 
 #if defined(VERBOSE)
-    std::cerr << "nrhs "<< cd.nrhs << '\n'
-              << "njac "<< cd.njac
+    std::cerr << "nrhs "<< cd.m_nrhs << '\n'
+              << "njac "<< cd.m_njac
               << std::endl;
 #endif
 
 #if defined(VERBOSE)
     for (size_t i=0; i<cd.xout.size(); ++i){
         std::cout << cd.xout[i] << " ";
-        for (size_t j=0; j<cd.ny; ++j){
-            std::cout << cd.yout[i*cd.ny+j] << " ";
+        for (int j=0; j<cd.m_ny; ++j){
+            std::cout << cd.yout[i*cd.m_ny+j] << " ";
         }
         std::cout << "\n";
     }
 #endif
 
-    for (size_t j=0; j<cd.ny; ++j){
-        auto val = cd.yout[nsteps*cd.ny+j];
-        auto ref = CoupledDecay::yi1(j, p, a); // analytic solution
+    for (int j=0; j<cd.m_ny; ++j){
+        auto val = cd.yout[nsteps*cd.m_ny+j];
+        auto ref = yi1<value_type>(j, p, a); // analytic solution
 #if defined(VERBOSE)
         std::cerr << val - ref << " ";
 #endif
@@ -262,13 +158,12 @@ int main(int argc, char **argv)
 #else
     std::cout.precision(50);
 #endif
-    int log10abstol, log10reltol, log10tend, log10dx, adaptive, N, p, a, method;
+    int log10abstol, log10reltol, log10tend, log10dx, N, p, a, method;
     if (argc != 10){
         log10abstol = -8;
         log10reltol = -8;
         log10tend = 0;
         log10dx = -14;
-        adaptive = 1;
         N = 27;
         p = 1;
         a = 27;
@@ -278,12 +173,11 @@ int main(int argc, char **argv)
         log10reltol = atoi(argv[2]);
         log10tend = atoi(argv[3]);
         log10dx = atoi(argv[4]);
-        adaptive = atoi(argv[5]);
         N = atoi(argv[6]);
         p = atoi(argv[7]);
         a = atoi(argv[8]);
         method = atoi(argv[9]);
     }
     return run_integration(log10abstol, log10reltol, log10tend,
-                           log10dx, adaptive == 1, N, p, a, method);
+                           log10dx, N, p, a, method);
 }
