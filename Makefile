@@ -1,4 +1,4 @@
-CXXFLAGS=-std=c++11 -g -Wall -Wextra -Werror -pedantic -Wno-unused-local-typedefs -I.
+CXXFLAGS=-std=c++11 -g -Wall -Wextra -pedantic -Wno-unused-local-typedefs -I.
 ifeq ($(RELEASE),1)
   CXXFLAGS+=-O2 -DNDEBUG
 else
@@ -16,9 +16,9 @@ a?=27
 
 test: all
 	for method in 0 1 2 3 4 5 ; do \
-		./decay_chain_dp $(log10abstol) $(log10reltol) $(log10tend) $(log10dx) $(adaptive) $(N) $(p) $(a) $$method ; \
-		./decay_chain_cpp $(log10abstol) $(log10reltol) $(log10tend) $(log10dx) $(adaptive) $(N) $(p) $(a) $$method ; \
-		./decay_chain_gmp $(log10abstol) $(log10reltol) $(log10tend) $(log10dx) $(adaptive) $(N) $(p) $(a) $$method ; \
+		./decay_chain_dp $(log10abstol) $(log10reltol) $(log10tend) $(log10dx) $(N) $(p) $(a) $$method ; \
+		./decay_chain_cpp $(log10abstol) $(log10reltol) $(log10tend) $(log10dx) $(N) $(p) $(a) $$method ; \
+		./decay_chain_gmp $(log10abstol) $(log10reltol) $(log10tend) $(log10dx) $(N) $(p) $(a) $$method ; \
 	done
 	# lu decomposition fails with mpfr (proably a bug in either odeint, ublas or mpfr):
 	#./decay_chain_mpfr

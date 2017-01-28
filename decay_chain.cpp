@@ -109,7 +109,7 @@ int run_integration(int log10abstol,
         nsteps = cd.dopri5_adaptive_nondense(y, x0, xend, dx0, atol, rtol);
     else if (method == 5)
         nsteps = cd.bulirsch_stoer_adaptive_nondense(y, x0, xend, dx0, atol, rtol);
-    if (method == 6)
+    else if (method == 6)
         nsteps = cd.rosenbrock_const(y, x0, xend, dx0);
     else if (method == 7)
         nsteps = cd.dopri5_const(y, x0, xend, dx0);
@@ -134,6 +134,7 @@ int run_integration(int log10abstol,
     }
 #endif
 
+#if defined DEBUG
     for (int j=0; j<cd.m_ny; ++j){
         auto val = cd.yout[nsteps*cd.m_ny+j];
         auto ref = yi1<value_type>(j, p, a); // analytic solution
@@ -141,12 +142,14 @@ int run_integration(int log10abstol,
         std::cerr << val - ref << " ";
 #endif
         if (abs(val - ref) > (atol + rtol*ref))
-            return 1; // Integration error too big!
+            throw std::logic_error("Integration error too big!");
     }
 #if defined(VERBOSE)
     std::cerr << "\n";
 #endif
-
+#endif
+    if (nsteps < 1)
+        return 0;
     return 0;
 }
 
