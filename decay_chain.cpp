@@ -159,7 +159,7 @@ int main(int argc, char **argv)
     std::cout.precision(50);
 #endif
     int log10abstol, log10reltol, log10tend, log10dx, N, p, a, method;
-    if (argc != 10){
+    if (argc != 9){
         log10abstol = -8;
         log10reltol = -8;
         log10tend = 0;
@@ -173,10 +173,10 @@ int main(int argc, char **argv)
         log10reltol = atoi(argv[2]);
         log10tend = atoi(argv[3]);
         log10dx = atoi(argv[4]);
-        N = atoi(argv[6]);
-        p = atoi(argv[7]);
-        a = atoi(argv[8]);
-        method = atoi(argv[9]);
+        N = atoi(argv[5]);
+        p = atoi(argv[6]);
+        a = atoi(argv[7]);
+        method = atoi(argv[8]);
     }
     return run_integration(log10abstol, log10reltol, log10tend,
                            log10dx, N, p, a, method);

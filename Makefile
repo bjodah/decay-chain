@@ -38,3 +38,6 @@ decay_chain_mpfr: decay_chain.cpp
 
 decay_chain_gmp: decay_chain.cpp
 	$(CXX) $(CXXFLAGS) -DVALUE_TYPE_IDX=3 -o $@ $^ -lgmp
+
+analytic: analytic.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $<
