@@ -1,8 +1,11 @@
+clone:
+  depth: 2
+  recursive: true
+
 build:
   image: bjodah/bjodahimg18dev:v1.2
   commands:
-    - python3 -m pip install git+https://github.com/bjodah/batemaneq.git
-    - CPLUS_INCLUDE_PATH=$(python3 -c "import batemaneq; print(batemaneq.get_include())") ./run_all.sh
+    - CPLUS_INCLUDE_PATH=$PWD/batemaneq/include ./run_all.sh
     - mkdir deploy
     - cp *.png deploy/
 
