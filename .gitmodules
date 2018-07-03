@@ -1,0 +1,3 @@
+[submodule "batemaneq"]
+	path = batemaneq
+	url = git://github.com/bjodah/batemaneq
