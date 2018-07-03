@@ -1,12 +1,8 @@
 build:
-  image: bjodah/bjodahimg16dev:latest
+  image: bjodah/bjodahimg18dev:v1.2
   commands:
-    - export CURPATH=$(pwd)
-    - cd /opt/boost_1_63_0/boost/numeric/odeint/stepper
-    - patch -p1 < $CURPATH/rosenbrock4_controller.hpp.patch
-    - cd -
-    - python -m pip install git+https://github.com/bjodah/batemaneq.git@dist-include
-    - CPLUS_INCLUDE_PATH=/opt/boost_1_63_0:$(python -c "import batemaneq; print(batemaneq.get_include())") ./run_all.sh
+    - python3 -m pip install git+https://github.com/bjodah/batemaneq.git
+    - CPLUS_INCLUDE_PATH=$(python3 -c "import batemaneq; print(batemaneq.get_include())") ./run_all.sh
     - mkdir deploy
     - cp *.png deploy/
 
