@@ -2,7 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <boost/multiprecision/cpp_dec_float.hpp>
-#include "batemaneq.hpp"
+#include "bateman.hpp"
 
 using Real_t = boost::multiprecision::cpp_dec_float_50;
 using vec_t = std::vector<Real_t>;
@@ -45,7 +45,7 @@ int main(int argc, char *argv[]){
         vals.push_back((Real_t)item);
 
         std::cout << vals[i] << " ";
-        auto p = batemaneq::bateman_parent(lmbd, vals[i], exp_cb);
+        auto p = bateman::bateman_parent(lmbd, vals[i], exp_cb);
         if (diff) {
             int j = 0;
             for (; std::getline(linestream, item, ' '); ++j)
